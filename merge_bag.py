@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
-import sys
 import argparse
 from fnmatch import fnmatchcase
 
 from rosbag import Bag
 
 import genpy
-import time
 
 
 def main():
@@ -48,13 +46,28 @@ def main():
                             matchedtopics.append(topic)
                             if (args.verbose):
                                 print("Including matched topic '%s'" % topic)
-                        #print("topic: '%s'" % topic)
-                        # print(t)
-                        if(msg.header.stamp.to_sec() == 0):
-                            o.write(topic, msg, genpy.Time.from_sec(t_not_zero))
+                        # print("topic: '%s'" % topic)
+                        print("\r", t, end="")
+
+                        # check if msg has attribute 'header'
+                        if (hasattr(msg, 'header')):
+                            if (msg.header.stamp.to_sec() == 0):
+                                o.write(
+                                    topic, msg, genpy.Time.from_sec(t_not_zero))
+                            else:
+                                o.write(topic, msg, genpy.Time.from_sec(
+                                    msg.header.stamp.to_sec()))
+                                t_not_zero = msg.header.stamp.to_sec()
                         else:
-                            o.write(topic, msg, genpy.Time.from_sec(msg.header.stamp.to_sec()))
-                            t_not_zero = msg.header.stamp.to_sec()
+                            # it is tf
+                            if (msg.transforms[0].header.stamp.to_sec() == 0):
+                                o.write(
+                                    topic, msg, genpy.Time.from_sec(t_not_zero))
+                            else:
+                                o.write(topic, msg, genpy.Time.from_sec(
+                                    msg.transforms[0].header.stamp.to_sec()))
+                                t_not_zero = msg.transforms[0].header.stamp.to_sec(
+                                )
                         included_count += 1
                     else:
                         skipped_count += 1
